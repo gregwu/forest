@@ -103,6 +103,9 @@
 
     window.renderFieldRow = function(id, field) {
         const existing = document.getElementById('row-' + id);
+        if (existing && window.CKEDITOR && CKEDITOR.instances[id]) {
+            CKEDITOR.instances[id].destroy(true);
+        }
         const wrapper = document.createElement('div');
         wrapper.innerHTML = buildFieldHtml(id, field);
         const node = wrapper.firstElementChild;
@@ -110,6 +113,9 @@
             existing.replaceWith(node);
         } else {
             document.getElementById('fieldset').appendChild(node);
+        }
+        if (field.type === 'ckeditor' && window.CKEDITOR) {
+            CKEDITOR.replace(id);
         }
     };
 
@@ -153,7 +159,11 @@
         const options = row.dataset.options;
         const el = document.getElementById(id);
         let value = '';
-        if (el) value = el.type === 'checkbox' ? el.checked : el.value;
+        if (window.CKEDITOR && CKEDITOR.instances[id]) {
+            value = CKEDITOR.instances[id].getData();
+        } else if (el) {
+            value = el.type === 'checkbox' ? el.checked : el.value;
+        }
         openFieldModal(id, {type, value, options});
     };
 
