@@ -82,9 +82,12 @@ a:hover { text-decoration: underline; }
     stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
     fill: none;
 }
-.search-box { display: flex; align-items: center; margin-left: auto; gap: 4px; }
+.search-box { position: relative; display: flex; align-items: center; margin-left: auto; }
 .search-box input {
-    padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; width: 200px;
+    padding: 6px 34px 6px 10px; border: 1px solid var(--border); border-radius: 4px; width: 200px;
+}
+.search-box .icon-btn {
+    position: absolute; right: 2px; padding: 5px; background: none; border: none;
 }
 .msg-toast {
     position: fixed; top: 60px; right: 20px; padding: 10px 16px; border-radius: 4px;
@@ -129,6 +132,9 @@ a:hover { text-decoration: underline; }
 /* ---------- Editor form ---------- */
 .field-group { margin-bottom: 14px; }
 .field-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #444; }
+.field-label-row { display: flex; align-items: center; justify-content: space-between; }
+.field-label-row label { margin-bottom: 0; }
+.field-add-btn { margin-bottom: 4px; }
 .text-input, select, textarea.text-input {
     width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px;
     font-family: inherit;

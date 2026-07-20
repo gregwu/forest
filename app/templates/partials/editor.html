@@ -3,8 +3,12 @@
     <input type="hidden" name="data" id="editor-data-json">
 
     <div class="field-group">
-        <label for="f-name">Name</label>
-        <button type="button" class="btn btn-xs" title="New field" onclick="openFieldModal()">+ Field</button>
+        <div class="field-label-row">
+            <label for="f-name">Name</label>
+            <button type="button" class="icon-btn field-add-btn" title="New field" onclick="openFieldModal()">
+                <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </button>
+        </div>
         <input class="text-input" id="f-name" name="__name" value="{{ node.name }}">
     </div>
 
