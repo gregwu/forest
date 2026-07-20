@@ -1,5 +1,5 @@
 <form id="editor-form" hx-put="{{ base }}/api/nodes/{{ node.id }}" hx-target="#editor-pane" hx-swap="innerHTML"
-      onsubmit="return prepareSave(event)">
+      onsubmit="return prepareSave(event)" data-is-html-page="{{ node.name.endswith('.html') }}">
     <input type="hidden" name="data" id="editor-data-json">
 
     <div class="field-group">
@@ -25,7 +25,7 @@
         {% endfor %}
     </div>
 </form>
-<script>setPublishVisible({{ 'true' if node.name.endswith('.html') else 'false' }});</script>
+<script>setPublishVisible(document.getElementById('editor-form').dataset.isHtmlPage === 'True');</script>
 
 <div id="field-modal" class="modal-backdrop" style="display:none;">
     <div class="modal">
@@ -159,15 +159,24 @@
             const optHtml = opts.map(o => `<option value="${esc(o)}" ${o === field.value ? 'selected' : ''}>${esc(o)}</option>`).join('');
             inner = `<select id="${id}" ${field.type === 'multiselect' ? 'multiple' : ''}>${optHtml}</select>`;
         } else if (field.type === 'checkbox') {
-            inner = `<input type="checkbox" id="${id}" ${field.value ? 'checked' : ''} value="${esc(opts[0] || '')}">`;
+            const checkedVals = (field.value || '').split(',').map(v => v.trim()).filter(Boolean);
+            inner = `<div class="option-group" id="${id}">` + opts.map((o, i) => `
+                <label class="option-item"><input type="checkbox" name="${id}" value="${esc(o)}" ${checkedVals.includes(o) ? 'checked' : ''}> ${esc(o)}</label>`
+            ).join('') + `</div>`;
         } else if (field.type === 'radio') {
-            inner = `<input type="radio" id="${id}" value="${esc(opts[0] || '')}">`;
+            inner = `<div class="option-group" id="${id}">` + opts.map((o, i) => `
+                <label class="option-item"><input type="radio" name="${id}" value="${esc(o)}" ${o === field.value ? 'checked' : ''}> ${esc(o)}</label>`
+            ).join('') + `</div>`;
         } else if (field.type === 'link') {
-            inner = `<a id="${id}" href="${esc(opts[0] || '')}">${esc(id)}</a>`;
-        } else if (field.type === 'image') {
-            inner = `<input type="hidden" id="${id}" value="${esc(field.value)}"><img class="preview-img" src="${esc(field.value)}">`;
-        } else if (field.type === 'file') {
-            inner = `<input type="hidden" id="${id}" value="${esc(field.value)}"><a href="${esc(field.value)}" target="_blank">Download</a>`;
+            const [href, target] = (field.options || '').split('|');
+            inner = `<input type="text" class="text-input link-text" id="${id}" placeholder="Link text" value="${esc(field.value)}">
+                <input type="url" class="text-input link-url" placeholder="URL" value="${esc(href || '')}">
+                <select class="link-target">
+                    <option value="_self" ${target !== '_blank' ? 'selected' : ''}>Same tab (_self)</option>
+                    <option value="_blank" ${target === '_blank' ? 'selected' : ''}>New tab (_blank)</option>
+                </select>`;
+        } else if (field.type === 'image' || field.type === 'file') {
+            inner = buildUploadFieldHtml(id, field);
         } else if (field.type === 'hidden') {
             inner = `<input type="hidden" id="${id}" value="${esc(field.value)}">`;
         } else {
@@ -180,17 +189,76 @@
         </div>`;
     };
 
+    window.buildUploadFieldHtml = function(id, field) {
+        const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const hasFile = !!field.value;
+        const isImage = field.type === 'image';
+        const previewOrDownload = isImage
+            ? `<img id="preview-${id}" class="preview-img" src="${esc(field.value)}">`
+            : `<a id="preview-${id}" href="${esc(field.value)}" target="_blank">Download</a>`;
+        return `
+            <input type="hidden" id="${id}" value="${esc(field.value)}">
+            <input type="file" id="upload-input-${id}" class="upload-file-input"
+                   ${isImage ? 'accept="image/*"' : ''}
+                   onchange="handleFileUpload(event, '${id}', ${isImage})">
+            <button type="button" class="btn btn-sm upload-select-btn" id="select-${id}"
+                    style="${hasFile ? 'display:none;' : ''}"
+                    onclick="document.getElementById('upload-input-${id}').click()">Select</button>
+            <div class="upload-preview" id="upload-preview-${id}" style="${hasFile ? '' : 'display:none;'}">
+                ${previewOrDownload}
+                <span class="remove-upload-btn" title="Remove" onclick="removeUploadedFile('${id}')">&#215;</span>
+            </div>`;
+    };
+
+    window.handleFileUpload = function(evt, id, isImage) {
+        const file = evt.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        fetch(window.BASE_PATH + '/api/upload', {method: 'POST', body: formData})
+            .then(r => r.json())
+            .then(function(result) {
+                if (result.status !== 'ok') {
+                    setMsg(result.msg || 'Upload failed', 'danger');
+                    return;
+                }
+                document.getElementById(id).value = result.url;
+                const preview = document.getElementById('upload-preview-' + id);
+                const previewEl = document.getElementById('preview-' + id);
+                if (isImage) {
+                    previewEl.src = result.url;
+                } else {
+                    previewEl.href = result.url;
+                }
+                preview.style.display = '';
+                document.getElementById('select-' + id).style.display = 'none';
+            })
+            .catch(function() { setMsg('Upload failed', 'danger'); });
+    };
+
+    window.removeUploadedFile = function(id) {
+        document.getElementById(id).value = '';
+        document.getElementById('upload-preview-' + id).style.display = 'none';
+        document.getElementById('select-' + id).style.display = '';
+        document.getElementById('upload-input-' + id).value = '';
+    };
+
     window.editFieldRow = function(id) {
         const row = document.getElementById('row-' + id);
         if (!row) return;
         const type = row.dataset.type;
         const options = row.dataset.options;
-        const el = document.getElementById(id);
         let value = '';
-        if (window.CKEDITOR && CKEDITOR.instances[id]) {
+        if (type === 'checkbox') {
+            value = Array.from(row.querySelectorAll('input[type=checkbox]:checked')).map(el => el.value).join(',');
+        } else if (type === 'radio') {
+            const checked = row.querySelector('input[type=radio]:checked');
+            value = checked ? checked.value : '';
+        } else if (window.CKEDITOR && CKEDITOR.instances[id]) {
             value = CKEDITOR.instances[id].getData();
-        } else if (el) {
-            value = el.type === 'checkbox' ? el.checked : el.value;
+        } else {
+            const el = document.getElementById(id);
+            if (el) value = el.value;
         }
         openFieldModal(id, {type, value, options});
     };
@@ -203,14 +271,26 @@
         document.querySelectorAll('#fieldset > .form-group').forEach(function(row) {
             const id = row.id.replace(/^row-/, '');
             const type = row.dataset.type;
-            const el = document.getElementById(id);
-            let value = '';
-            if (el) {
-                if (type === 'checkbox') value = el.checked;
-                else if (window.CKEDITOR && CKEDITOR.instances[id]) value = CKEDITOR.instances[id].getData();
-                else value = el.value;
+            let value = '', options = row.dataset.options;
+            if (type === 'link') {
+                const textEl = row.querySelector('.link-text');
+                const urlEl = row.querySelector('.link-url');
+                const targetEl = row.querySelector('.link-target');
+                value = textEl ? textEl.value : '';
+                options = (urlEl ? urlEl.value : '') + '|' + (targetEl ? targetEl.value : '_self');
+            } else if (type === 'checkbox') {
+                value = Array.from(row.querySelectorAll('input[type=checkbox]:checked')).map(el => el.value).join(',');
+            } else if (type === 'radio') {
+                const checked = row.querySelector('input[type=radio]:checked');
+                value = checked ? checked.value : '';
+            } else {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (window.CKEDITOR && CKEDITOR.instances[id]) value = CKEDITOR.instances[id].getData();
+                    else value = el.value;
+                }
             }
-            data[id] = {value: value, type: type, options: row.dataset.options};
+            data[id] = {value: value, type: type, options: options};
         });
 
         document.getElementById('editor-data-json').value = JSON.stringify(data);

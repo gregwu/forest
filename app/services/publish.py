@@ -29,7 +29,15 @@ class RenderNode:
         for key, value in self.data.items():
             if key in ("template", "name"):
                 continue
-            merged[key] = value.get("value", "") if isinstance(value, dict) else value
+            if isinstance(value, dict) and value.get("type") == "link":
+                url, _, target = value.get("options", "").partition("|")
+                text = value.get("value", "") or url
+                target_attr = f' target="{target}"' if target else ""
+                merged[key] = f'<a href="{url}"{target_attr}>{text}</a>'
+            elif isinstance(value, dict):
+                merged[key] = value.get("value", "")
+            else:
+                merged[key] = value
         merged["html"] = html
         merged["node_id"] = str(self.id)
         merged["name"] = self.name

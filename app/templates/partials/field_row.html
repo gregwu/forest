@@ -14,17 +14,42 @@
             {% endfor %}
         </select>
     {% elif ftype == 'checkbox' %}
-        <input type="checkbox" id="{{ key }}" {{ 'checked' if fvalue else '' }} value="{{ foptions }}">
+        {% set checked_vals = fvalue.split(',') | map('trim') | list if fvalue else [] %}
+        <div class="option-group" id="{{ key }}">
+            {% for opt in foptions.split(',') | map('trim') if opt %}
+                <label class="option-item"><input type="checkbox" name="{{ key }}" value="{{ opt }}" {{ 'checked' if opt in checked_vals else '' }}> {{ opt }}</label>
+            {% endfor %}
+        </div>
     {% elif ftype == 'radio' %}
-        <input type="radio" id="{{ key }}" value="{{ foptions }}">
+        <div class="option-group" id="{{ key }}">
+            {% for opt in foptions.split(',') | map('trim') if opt %}
+                <label class="option-item"><input type="radio" name="{{ key }}" value="{{ opt }}" {{ 'checked' if opt == fvalue else '' }}> {{ opt }}</label>
+            {% endfor %}
+        </div>
     {% elif ftype == 'link' %}
-        <a id="{{ key }}" href="{{ foptions }}">{{ key }}</a>
-    {% elif ftype == 'image' %}
+        {% set url, target = (foptions.split('|') + [''])[:2] %}
+        <input type="text" class="text-input link-text" id="{{ key }}" placeholder="Link text" value="{{ fvalue }}">
+        <input type="url" class="text-input link-url" placeholder="URL" value="{{ url }}">
+        <select class="link-target">
+            <option value="_self" {{ 'selected' if target != '_blank' else '' }}>Same tab (_self)</option>
+            <option value="_blank" {{ 'selected' if target == '_blank' else '' }}>New tab (_blank)</option>
+        </select>
+    {% elif ftype in ['image', 'file'] %}
         <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
-        {% if fvalue %}<img class="preview-img" src="{{ fvalue }}">{% endif %}
-    {% elif ftype == 'file' %}
-        <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
-        {% if fvalue %}<a href="{{ fvalue }}" target="_blank">Download</a>{% endif %}
+        <input type="file" id="upload-input-{{ key }}" class="upload-file-input"
+               {{ 'accept="image/*"' if ftype == 'image' else '' }}
+               onchange="handleFileUpload(event, '{{ key }}', {{ 'true' if ftype == 'image' else 'false' }})">
+        <button type="button" class="btn btn-sm upload-select-btn" id="select-{{ key }}"
+                style="{{ 'display:none;' if fvalue else '' }}"
+                onclick="document.getElementById('upload-input-{{ key }}').click()">Select</button>
+        <div class="upload-preview" id="upload-preview-{{ key }}" style="{{ '' if fvalue else 'display:none;' }}">
+            {% if ftype == 'image' %}
+                <img id="preview-{{ key }}" class="preview-img" src="{{ fvalue }}">
+            {% else %}
+                <a id="preview-{{ key }}" href="{{ fvalue }}" target="_blank">Download</a>
+            {% endif %}
+            <span class="remove-upload-btn" title="Remove" onclick="removeUploadedFile('{{ key }}')">&#215;</span>
+        </div>
     {% elif ftype == 'hidden' %}
         <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
     {% else %}

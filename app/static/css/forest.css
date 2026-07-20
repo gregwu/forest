@@ -142,8 +142,15 @@ a:hover { text-decoration: underline; }
 .template-input { font-family: ui-monospace, monospace; font-size: 13px; }
 .form-group { margin-bottom: 14px; padding: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
 .form-group label { cursor: pointer; }
-.form-group.checkbox, .form-group.radio { display: flex; align-items: center; gap: 8px; }
+.option-group { display: flex; flex-direction: column; gap: 6px; }
+.option-item { display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; }
+.form-group.link { display: flex; flex-direction: column; gap: 6px; }
+.form-group.link select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
 .preview-img { max-width: 160px; display: block; margin-top: 6px; border-radius: 4px; }
+.upload-file-input { display: none; }
+.upload-preview { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.remove-upload-btn { cursor: pointer; color: var(--danger); font-size: 16px; line-height: 1; }
+.remove-upload-btn:hover { color: #a94442; }
 
 /* ---------- Modal ---------- */
 .modal-backdrop {

@@ -1,6 +1,8 @@
 import json
+import os
+import uuid
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.auth import get_current_user
@@ -8,8 +10,11 @@ from app.database import get_db
 from app.models import oid, serialize_id
 from app.services import nodes as node_service
 from app.templating import templates
+from app.urls import url as base_url
 
 router = APIRouter()
+
+UPLOAD_DIR = "app/static/uploads"
 
 
 async def _authorized_node(db: AsyncIOMotorDatabase, node_id: str, username: str) -> dict:
@@ -161,6 +166,25 @@ async def save_node(
         },
     )
     return response
+
+
+@router.post("/api/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    original_name = os.path.basename(file.filename or "upload")
+    ext = os.path.splitext(original_name)[1][:16]
+    safe_name = f"{uuid.uuid4().hex}{ext}"
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    dest_path = os.path.join(UPLOAD_DIR, safe_name)
+
+    with open(dest_path, "wb") as out:
+        while chunk := await file.read(1024 * 1024):
+            out.write(chunk)
+
+    return {"status": "ok", "url": base_url(f"/static/uploads/{safe_name}"), "name": original_name}
 
 
 @router.get("/api/search")
