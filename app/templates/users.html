@@ -12,6 +12,7 @@
                 <th>Admin</th>
                 <th>User name</th>
                 <th>Domain</th>
+                <th>Export / Import</th>
                 <th>Delete</th>
             </tr>
         </thead>
@@ -25,6 +26,16 @@
                 </td>
                 <td><a href="{{ base }}/users/{{ u.id }}/login-as" target="_blank">{{ u.username }}</a></td>
                 <td>{{ u.domain }}</td>
+                <td class="export-import-cell">
+                    <a class="btn btn-sm" href="{{ base }}/users/{{ u.id }}/export" title="Export {{ u.username }}'s tree">Export</a>
+                    <form method="post" action="{{ base }}/users/{{ u.id }}/import" enctype="multipart/form-data"
+                          class="import-form" id="import-form-{{ u.id }}">
+                        <input type="file" name="file" accept="application/json" class="import-file-input"
+                               onchange="this.form.submit()">
+                        <button type="button" class="btn btn-sm" onclick="this.closest('td').querySelector('.import-file-input').click()"
+                                title="Import a tree into {{ u.username }}'s account">Import</button>
+                    </form>
+                </td>
                 <td>
                     <span class="deletebtn"
                           hx-delete="{{ base }}/users/{{ u.id }}"
@@ -38,5 +49,6 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if msg %}<script>document.getElementById('msg').textContent = {{ msg | tojson }};</script>{% endif %}
 </div>
 {% endblock %}

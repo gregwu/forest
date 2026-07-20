@@ -219,6 +219,74 @@ async def save_node_data(db: AsyncIOMotorDatabase, node: dict, data: dict, usern
     return node
 
 
+async def _export_subtree(db: AsyncIOMotorDatabase, node: dict) -> dict:
+    children = []
+    for child_id in node.get("children", []):
+        child = await db.nodes.find_one({"_id": child_id, "deleted": {"$ne": True}})
+        if child is None:
+            continue
+        children.append(await _export_subtree(db, child))
+    return {"name": node["name"], "data": node.get("data") or {}, "children": children}
+
+
+async def export_user_tree(db: AsyncIOMotorDatabase, username: str) -> dict:
+    """Export every top-level node owned by `username` (i.e. direct children of root) as portable JSON."""
+    root = await get_root(db)
+    if root is None:
+        return {"username": username, "nodes": []}
+
+    nodes = []
+    for child_id in root.get("children", []):
+        child = await db.nodes.find_one({"_id": child_id, "deleted": {"$ne": True}})
+        if child is None or child.get("updated_by") != username:
+            continue
+        nodes.append(await _export_subtree(db, child))
+
+    return {"username": username, "nodes": nodes}
+
+
+async def _import_subtree(db: AsyncIOMotorDatabase, item: dict, parent_id: ObjectId, username: str) -> dict:
+    doc = {
+        "name": item.get("name", "untitled"),
+        "parent": parent_id,
+        "children": [],
+        "data": item.get("data") or {},
+        "content": _extract_content(item.get("data") or {}),
+        "updated_by": username,
+        "updated_on": datetime.datetime.now(datetime.timezone.utc),
+        "deleted": False,
+    }
+    result = await db.nodes.insert_one(doc)
+    doc["_id"] = result.inserted_id
+
+    child_ids = []
+    for child_item in item.get("children", []):
+        child_doc = await _import_subtree(db, child_item, doc["_id"], username)
+        child_ids.append(child_doc["_id"])
+
+    if child_ids:
+        await db.nodes.update_one({"_id": doc["_id"]}, {"$set": {"children": child_ids}})
+        doc["children"] = child_ids
+
+    return doc
+
+
+async def import_user_tree(db: AsyncIOMotorDatabase, export: dict, username: str) -> int:
+    """Import an export_user_tree() payload as new top-level nodes owned by `username`. Returns count imported."""
+    root = await ensure_root(db, "admin")
+    nodes = export.get("nodes", [])
+
+    imported_ids = []
+    for item in nodes:
+        doc = await _import_subtree(db, item, root["_id"], username)
+        imported_ids.append(doc["_id"])
+
+    if imported_ids:
+        await db.nodes.update_one({"_id": root["_id"]}, {"$push": {"children": {"$each": imported_ids}}})
+
+    return len(imported_ids)
+
+
 async def search_nodes(db: AsyncIOMotorDatabase, term: str, username: str) -> list[dict]:
     cursor = db.nodes.find(
         {

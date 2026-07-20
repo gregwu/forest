@@ -163,6 +163,9 @@ a:hover { text-decoration: underline; }
 .users-table { width: 100%; border-collapse: collapse; }
 .users-table th, .users-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .deletebtn { cursor: pointer; color: var(--danger); display: inline-flex; align-items: center; }
+.export-import-cell { display: flex; gap: 6px; align-items: center; }
+.import-form { display: inline-flex; margin: 0; }
+.import-file-input { display: none; }
 
 /* ---------- Help ---------- */
 .help-page { padding: 48px 32px 80px; max-width: 720px; margin: 0 auto; line-height: 1.6; }
