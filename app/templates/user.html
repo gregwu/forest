@@ -11,6 +11,7 @@
         </form>
         <div class="auth-links">
             <a href="{{ base }}/index.html">Back</a> | <a href="{{ base }}/logout">Logout</a>
+            {% if user.is_admin %} | <a href="{{ base }}/users">Users</a>{% endif %}
         </div>
         {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
     </div>
