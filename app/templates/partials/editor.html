@@ -70,6 +70,10 @@
 
 <script>
 (function() {
+    if (window.CKEDITOR) {
+        CKEDITOR.config.versionCheck = false;
+    }
+
     if (window.__editorScriptsLoaded) return;
     window.__editorScriptsLoaded = true;
 
