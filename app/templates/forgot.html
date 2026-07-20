@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Forgot Password{% endblock %}
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1>Forgot Password</h1>
+        <form method="post" action="{{ base }}/forgot">
+            <input type="text" name="username" placeholder="Username" required autofocus>
+            <input type="submit" class="btn btn-primary btn-block" value="Reset Password">
+        </form>
+        <div class="auth-links"><a href="{{ base }}/login">Back to login</a></div>
+        {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+    </div>
+</div>
+{% endblock %}

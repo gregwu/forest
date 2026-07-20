@@ -1,0 +1,13 @@
+[Unit]
+Description=Forest app (FastAPI)
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=greg
+WorkingDirectory=/opt/forest
+ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

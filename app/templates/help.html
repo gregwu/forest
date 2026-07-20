@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Help{% endblock %}
+{% block body %}
+<div class="help-page">
+    <div class="help-header">
+        <a href="{{ base }}/index.html" class="btn btn-sm">&larr; Back</a>
+        <h1>How Forest works</h1>
+    </div>
+
+    <section>
+        <h2>The tree</h2>
+        <p>
+            Everything you build lives in the tree on the left. Each item is a <strong>node</strong>.
+            Nodes can contain other nodes, forming pages and their pieces &mdash; a page node might
+            contain section nodes, which might contain further nodes, and so on. The very top node,
+            <strong>All</strong>, is the root of everything you own.
+        </p>
+        <ul>
+            <li><strong>Click</strong> a node to open it in the editor on the right.</li>
+            <li><strong>Click the arrow</strong> next to a node to expand or collapse its children.</li>
+            <li><strong>Double-click</strong> a node's name to rename it.</li>
+            <li><strong>Drag and drop</strong> a node onto another to move it &mdash; drop near the top of a
+                node to move <em>inside</em> it as the first child, or lower to place it <em>after</em> it
+                as a sibling.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>The toolbar</h2>
+        <ul>
+            <li><strong>New</strong> &mdash; creates a new child node under whichever node is currently selected.</li>
+            <li><strong>Duplicate</strong> &mdash; makes a copy of the selected node (and everything inside it),
+                placed right after the original.</li>
+            <li><strong>Delete</strong> &mdash; removes the selected node. A node must be empty (no children)
+                before it can be deleted.</li>
+            <li><strong>Save</strong> &mdash; saves your changes to the currently open node.</li>
+            <li><strong>Preview / Publish</strong> &mdash; only shown for page nodes (names ending in
+                <code>.html</code>); see below.</li>
+            <li><strong>Search</strong> &mdash; searches the name and content of your nodes.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Editing a node</h2>
+        <p>
+            Every node has a <strong>Name</strong> and a <strong>Template</strong> &mdash; the HTML that
+            defines how it renders. Inside the template, you can reference any field you've added using
+            double curly braces, e.g. <code>{% raw %}{{title}}{% endraw %}</code>.
+        </p>
+        <p>Two variables are always available, without needing a field:</p>
+        <ul>
+            <li><code>{% raw %}{{name}}{% endraw %}</code> &mdash; the node's own name.</li>
+            <li><code>{% raw %}{{html}}{% endraw %}</code> &mdash; renders all of the node's children in order.</li>
+        </ul>
+        <p>
+            Use <strong>+ Field</strong> to add a new piece of content to the node &mdash; text, a rich text
+            block, an image, a link, and more. Once added, a field shows up as its own input below the
+            template; double-click its label to edit its type or options again.
+        </p>
+    </section>
+
+    <section>
+        <h2>Preview &amp; Publish</h2>
+        <p>
+            Any node whose name ends in <code>.html</code> is a page. For pages, two extra buttons appear
+            in the toolbar:
+        </p>
+        <ul>
+            <li><strong>Preview</strong> opens a new tab showing what the page (and everything nested
+                inside it) currently renders to &mdash; without saving anything to disk.</li>
+            <li><strong>Publish</strong> renders the page and writes it out as a static HTML file, mirroring
+                your tree's folder structure. This is what actually makes a page live.</li>
+        </ul>
+        <p>Publishing always walks up to the nearest ancestor page (or <strong>All</strong>) first, so publishing
+            any node inside a page republishes that whole page.</p>
+    </section>
+
+    <section>
+        <h2>Search</h2>
+        <p>
+            Type into the search box and press Enter to find nodes by name or content. Click a result to
+            jump straight to it in the editor.
+        </p>
+    </section>
+
+    <section>
+        <h2>Sharing &amp; ownership</h2>
+        <p>
+            You only see and edit your own nodes. If you're an admin, you can also see nodes created by
+            the <code>admin</code> account. User accounts and roles are managed from the
+            <a href="{{ base }}/users">Users</a> page.
+        </p>
+    </section>
+</div>
+{% endblock %}

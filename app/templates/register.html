@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1>Create Account</h1>
+        <form method="post" action="{{ base }}/register">
+            <input type="text" name="username" placeholder="Username" required autofocus>
+            <input type="password" name="password" placeholder="Password" required>
+            <input type="text" name="domain" placeholder="Domain" required>
+            <input type="submit" class="btn btn-primary btn-block" value="Register">
+        </form>
+        <div class="auth-links">
+            <a href="{{ base }}/login">Back to login</a>
+        </div>
+        {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+    </div>
+</div>
+{% endblock %}

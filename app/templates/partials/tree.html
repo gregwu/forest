@@ -1,0 +1,93 @@
+{% macro render_node(node) %}
+<li class="tree-item">
+    <div class="tree-node" data-id="{{ node.id }}" draggable="true"
+         onclick="selectNode('{{ node.id }}', this)"
+         ondragstart="treeDragStart(event)"
+         ondragover="treeDragOver(event)"
+         ondrop="treeDrop(event)"
+         ondragleave="treeDragLeave(event)">
+        {% if node.children %}
+        <span class="toggle" onclick="toggleTreeNode(event, this)">
+            <svg class="icon chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(90deg);"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        {% else %}
+        <span class="toggle leaf">
+            <svg class="icon file-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </span>
+        {% endif %}
+        <span class="label" ondblclick="renameNode(event, '{{ node.id }}', '{{ node.name }}')">{{ node.name }}</span>
+    </div>
+    {% if node.children %}
+    <ul class="tree-children">
+        {% for child in node.children %}
+            {{ render_node(child) }}
+        {% endfor %}
+    </ul>
+    {% endif %}
+</li>
+{% endmacro %}
+
+<ul id="tree" class="tree-root">
+    {% if tree %}
+        {{ render_node(tree) }}
+    {% else %}
+        <li class="hint">No tree yet.</li>
+    {% endif %}
+</ul>
+
+<script>
+(function() {
+    if (typeof window.treeDragStart === 'function') return;
+
+    window.treeDragStart = function(e) {
+        e.dataTransfer.setData('text/plain', e.currentTarget.dataset.id);
+        e.stopPropagation();
+    };
+    window.treeDragOver = function(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    };
+    window.treeDragLeave = function(e) {
+        e.currentTarget.classList.remove('drag-over');
+    };
+    window.treeDrop = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over');
+        const draggedId = e.dataTransfer.getData('text/plain');
+        const targetId = e.currentTarget.dataset.id;
+        if (!draggedId || draggedId === targetId) return;
+        const position = e.offsetY < e.currentTarget.offsetHeight / 3 ? 'inside' : 'after';
+        if (!window.confirm('Move node ' + (position === 'inside' ? 'inside' : 'after') + ' target?')) return;
+        htmx.ajax('POST', window.BASE_PATH + '/api/nodes/' + draggedId + '/move', {
+            target: '#sidebar', swap: 'innerHTML',
+            values: {parent_id: targetId, position: position}
+        });
+    };
+    window.toggleTreeNode = function(e, toggleEl) {
+        e.stopPropagation();
+        const li = toggleEl.closest('li');
+        const chevron = toggleEl.querySelector('svg');
+        const isClosed = li.classList.toggle('closed');
+        chevron.style.transform = isClosed ? 'rotate(0deg)' : 'rotate(90deg)';
+    };
+
+    window.renameNode = function(e, id, currentName) {
+        e.stopPropagation();
+        const name = window.prompt('Rename node', currentName);
+        if (name && name !== currentName) {
+            htmx.ajax('PUT', window.BASE_PATH + '/api/nodes/' + id + '/rename', {
+                target: '#sidebar', swap: 'innerHTML',
+                values: {name: name}
+            });
+        }
+    };
+})();
+
+{% if select_id %}
+(function() {
+    const el = document.querySelector('.tree-node[data-id="{{ select_id }}"]');
+    if (el) selectNode('{{ select_id }}', el);
+})();
+{% endif %}
+</script>

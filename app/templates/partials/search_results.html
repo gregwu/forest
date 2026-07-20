@@ -1,0 +1,13 @@
+<div class="search-header">Search '<span>{{ term }}</span>'</div>
+<div class="search-list">
+    {% for r in results %}
+    <div class="search-item">
+        <div class="search-title">
+            <a href="#" onclick="selectNode('{{ r.id }}', null); return false;">{{ r.name }}</a>
+        </div>
+        <div class="search-content">{{ r.content }}</div>
+    </div>
+    {% else %}
+    <div class="hint">No results.</div>
+    {% endfor %}
+</div>

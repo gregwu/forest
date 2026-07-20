@@ -1,0 +1,186 @@
+<form id="editor-form" hx-put="{{ base }}/api/nodes/{{ node.id }}" hx-target="#editor-pane" hx-swap="innerHTML"
+      onsubmit="return prepareSave(event)">
+    <input type="hidden" name="data" id="editor-data-json">
+
+    <div class="field-group">
+        <label for="f-name">Name</label>
+        <button type="button" class="btn btn-xs" title="New field" onclick="openFieldModal()">+ Field</button>
+        <input class="text-input" id="f-name" name="__name" value="{{ node.name }}">
+    </div>
+
+    <div class="field-group">
+        <label for="f-template">Template</label>
+        <textarea class="text-input template-input" id="f-template" name="__template" rows="8">{{ data.template or '' }}</textarea>
+    </div>
+
+    <div id="fieldset">
+        {% for key, field in data.items() %}
+            {% if key not in ('template', 'name') %}
+                {% include "partials/field_row.html" %}
+            {% endif %}
+        {% endfor %}
+    </div>
+</form>
+<script>setPublishVisible({{ 'true' if node.name.endswith('.html') else 'false' }});</script>
+
+<div id="field-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+        <h4>Field editor</h4>
+        <div class="field-group">
+            <label>ID</label>
+            <input type="text" id="fm-id" readonly>
+        </div>
+        <div class="field-group">
+            <label>Value</label>
+            <input type="text" id="fm-value">
+        </div>
+        <div class="field-group">
+            <label>Type</label>
+            <select id="fm-type">
+                <option>text</option>
+                <option>textarea</option>
+                <option>ckeditor</option>
+                <option>select</option>
+                <option>multiselect</option>
+                <option>radio</option>
+                <option>checkbox</option>
+                <option>link</option>
+                <option>image</option>
+                <option>file</option>
+                <option>password</option>
+                <option>hidden</option>
+                <option>number</option>
+                <option>date</option>
+                <option>email</option>
+                <option>url</option>
+                <option>color</option>
+            </select>
+        </div>
+        <div class="field-group">
+            <label>Options (comma separated)</label>
+            <textarea id="fm-options" rows="2"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" onclick="saveFieldModal()">Render</button>
+            <button type="button" class="btn" onclick="deleteFieldModal()">Delete</button>
+            <button type="button" class="btn" onclick="closeFieldModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    if (window.__editorScriptsLoaded) return;
+    window.__editorScriptsLoaded = true;
+
+    window.fieldId = function() { return '_' + Math.random().toString(36).slice(2, 11); };
+
+    window.openFieldModal = function(id, field) {
+        field = field || {type: 'text', value: '', options: ''};
+        document.getElementById('fm-id').value = id || window.fieldId();
+        document.getElementById('fm-value').value = field.value || '';
+        document.getElementById('fm-type').value = field.type || 'text';
+        document.getElementById('fm-options').value = field.options || '';
+        document.getElementById('field-modal').style.display = 'flex';
+    };
+    window.closeFieldModal = function() {
+        document.getElementById('field-modal').style.display = 'none';
+    };
+    window.saveFieldModal = function() {
+        const id = document.getElementById('fm-id').value;
+        const type = document.getElementById('fm-type').value;
+        const value = document.getElementById('fm-value').value;
+        const options = document.getElementById('fm-options').value;
+        renderFieldRow(id, {type, value, options});
+        closeFieldModal();
+    };
+    window.deleteFieldModal = function() {
+        const id = document.getElementById('fm-id').value;
+        const row = document.getElementById('row-' + id);
+        if (row) row.remove();
+        closeFieldModal();
+    };
+
+    window.renderFieldRow = function(id, field) {
+        const existing = document.getElementById('row-' + id);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = buildFieldHtml(id, field);
+        const node = wrapper.firstElementChild;
+        if (existing) {
+            existing.replaceWith(node);
+        } else {
+            document.getElementById('fieldset').appendChild(node);
+        }
+    };
+
+    window.buildFieldHtml = function(id, field) {
+        const opts = (field.options || '').split(',').map(o => o.trim()).filter(Boolean);
+        const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        let inner = '';
+        if (['text', 'number', 'password', 'date', 'email', 'url', 'color'].includes(field.type)) {
+            inner = `<input type="${field.type}" class="text-input" value="${esc(field.value)}" id="${id}">`;
+        } else if (field.type === 'textarea' || field.type === 'ckeditor') {
+            inner = `<textarea class="text-input ${field.type === 'ckeditor' ? 'ckeditor' : ''}" id="${id}" rows="3">${esc(field.value)}</textarea>`;
+        } else if (field.type === 'select' || field.type === 'multiselect') {
+            const optHtml = opts.map(o => `<option value="${esc(o)}" ${o === field.value ? 'selected' : ''}>${esc(o)}</option>`).join('');
+            inner = `<select id="${id}" ${field.type === 'multiselect' ? 'multiple' : ''}>${optHtml}</select>`;
+        } else if (field.type === 'checkbox') {
+            inner = `<input type="checkbox" id="${id}" ${field.value ? 'checked' : ''} value="${esc(opts[0] || '')}">`;
+        } else if (field.type === 'radio') {
+            inner = `<input type="radio" id="${id}" value="${esc(opts[0] || '')}">`;
+        } else if (field.type === 'link') {
+            inner = `<a id="${id}" href="${esc(opts[0] || '')}">${esc(id)}</a>`;
+        } else if (field.type === 'image') {
+            inner = `<input type="hidden" id="${id}" value="${esc(field.value)}"><img class="preview-img" src="${esc(field.value)}">`;
+        } else if (field.type === 'file') {
+            inner = `<input type="hidden" id="${id}" value="${esc(field.value)}"><a href="${esc(field.value)}" target="_blank">Download</a>`;
+        } else if (field.type === 'hidden') {
+            inner = `<input type="hidden" id="${id}" value="${esc(field.value)}">`;
+        } else {
+            inner = `<input type="text" class="text-input" value="${esc(field.value)}" id="${id}">`;
+        }
+
+        return `<div class="form-group ${field.type}" id="row-${id}" data-type="${field.type}" data-options="${esc(field.options)}">
+            <label ondblclick="editFieldRow('${id}')">${id}</label>
+            ${inner}
+        </div>`;
+    };
+
+    window.editFieldRow = function(id) {
+        const row = document.getElementById('row-' + id);
+        if (!row) return;
+        const type = row.dataset.type;
+        const options = row.dataset.options;
+        const el = document.getElementById(id);
+        let value = '';
+        if (el) value = el.type === 'checkbox' ? el.checked : el.value;
+        openFieldModal(id, {type, value, options});
+    };
+
+    window.prepareSave = function(evt) {
+        const data = {};
+        data.name = document.getElementById('f-name').value;
+        data.template = document.getElementById('f-template').value;
+
+        document.querySelectorAll('#fieldset > .form-group').forEach(function(row) {
+            const id = row.id.replace(/^row-/, '');
+            const type = row.dataset.type;
+            const el = document.getElementById(id);
+            let value = '';
+            if (el) {
+                if (type === 'checkbox') value = el.checked;
+                else if (window.CKEDITOR && CKEDITOR.instances[id]) value = CKEDITOR.instances[id].getData();
+                else value = el.value;
+            }
+            data[id] = {value: value, type: type, options: row.dataset.options};
+        });
+
+        document.getElementById('editor-data-json').value = JSON.stringify(data);
+        return true;
+    };
+
+    document.querySelectorAll('#fieldset textarea.ckeditor').forEach(function(ta) {
+        if (window.CKEDITOR) CKEDITOR.replace(ta.id);
+    });
+})();
+</script>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1>Login to Your Account</h1>
+        <form method="post" action="{{ base }}/login">
+            <input type="hidden" name="url" value="{{ url }}">
+            <input type="text" name="username" placeholder="Username" required autofocus>
+            <input type="password" name="password" placeholder="Password" required>
+            <input type="submit" class="btn btn-primary btn-block" value="Login">
+        </form>
+        <div class="auth-links">
+            <a href="{{ base }}/register">Register</a> - <a href="{{ base }}/forgot">Forgot Password</a>
+        </div>
+        {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+    </div>
+</div>
+{% endblock %}

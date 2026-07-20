@@ -1,0 +1,33 @@
+{% set ftype = field.type if field is mapping else 'text' %}
+{% set fvalue = field.value if field is mapping else field %}
+{% set foptions = field.options if field is mapping else '' %}
+<div class="form-group {{ ftype }}" id="row-{{ key }}" data-type="{{ ftype }}" data-options="{{ foptions }}">
+    <label ondblclick="editFieldRow('{{ key }}')">{{ key }}</label>
+    {% if ftype in ['text','number','password','date','email','url','color'] %}
+        <input type="{{ ftype }}" class="text-input" id="{{ key }}" value="{{ fvalue }}">
+    {% elif ftype in ['textarea','ckeditor'] %}
+        <textarea class="text-input {{ 'ckeditor' if ftype == 'ckeditor' else '' }}" id="{{ key }}" rows="3">{{ fvalue }}</textarea>
+    {% elif ftype in ['select','multiselect'] %}
+        <select id="{{ key }}" {{ 'multiple' if ftype == 'multiselect' else '' }}>
+            {% for opt in foptions.split(',') if opt %}
+                <option value="{{ opt }}" {{ 'selected' if opt == fvalue else '' }}>{{ opt }}</option>
+            {% endfor %}
+        </select>
+    {% elif ftype == 'checkbox' %}
+        <input type="checkbox" id="{{ key }}" {{ 'checked' if fvalue else '' }} value="{{ foptions }}">
+    {% elif ftype == 'radio' %}
+        <input type="radio" id="{{ key }}" value="{{ foptions }}">
+    {% elif ftype == 'link' %}
+        <a id="{{ key }}" href="{{ foptions }}">{{ key }}</a>
+    {% elif ftype == 'image' %}
+        <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
+        {% if fvalue %}<img class="preview-img" src="{{ fvalue }}">{% endif %}
+    {% elif ftype == 'file' %}
+        <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
+        {% if fvalue %}<a href="{{ fvalue }}" target="_blank">Download</a>{% endif %}
+    {% elif ftype == 'hidden' %}
+        <input type="hidden" id="{{ key }}" value="{{ fvalue }}">
+    {% else %}
+        <input type="text" class="text-input" id="{{ key }}" value="{{ fvalue }}">
+    {% endif %}
+</div>

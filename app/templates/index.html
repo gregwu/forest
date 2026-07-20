@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Forest{% endblock %}
+{% block head %}
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+{% endblock %}
+{% block body %}
+<div class="topbar">
+    <button id="menu-toggle" class="icon-btn" title="Toggle sidebar">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <button class="icon-btn" title="New" onclick="promptNew()">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    </button>
+    <button class="icon-btn" title="Duplicate" onclick="duplicateNode()">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>
+    <button class="icon-btn danger" title="Delete" onclick="deleteNode()">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+    </button>
+    <button class="icon-btn primary" title="Save" form="editor-form" type="submit">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    </button>
+    <button id="preview-btn" class="icon-btn" title="Preview" onclick="previewNode()" style="display:none;">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button id="publish-btn" class="icon-btn" title="Publish" onclick="publishNode()" style="display:none;">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><polyline points="12 12 12 21"/><polyline points="16 16 12 12 8 16"/></svg>
+    </button>
+    <div class="search-box">
+        <input type="text" id="srch-term" placeholder="Search"
+               hx-get="{{ base }}/api/search" hx-trigger="keyup[key=='Enter']" hx-target="#search-results"
+               hx-include="this" name="term">
+        <button class="icon-btn" onclick="runSearch()">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+    </div>
+    <button class="icon-btn" title="Help" onclick="window.open(window.BASE_PATH + '/help', '_blank', 'noopener')">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <a class="icon-btn" href="{{ base }}/user" title="{{ user.username }}">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <a class="icon-btn" href="{{ base }}/logout" title="Logout">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </a>
+    <div id="msg" class="msg-toast"></div>
+</div>
+
+<div id="wrapper">
+    <div id="sidebar" hx-get="{{ base }}/api/tree" hx-trigger="load" hx-swap="innerHTML">
+        <div class="loading">Loading tree&hellip;</div>
+    </div>
+
+    <div id="content">
+        <div id="editor-pane">
+            <p class="hint">Select a node from the tree to edit it.</p>
+        </div>
+        <div id="search-results" style="display:none;"></div>
+    </div>
+</div>
+
+<script>
+window.currentNodeId = null;
+
+function selectNode(id, el) {
+    window.currentNodeId = id;
+    document.querySelectorAll('#sidebar .tree-node.selected').forEach(n => n.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('editor-pane').style.display = 'block';
+    setPublishVisible(false);
+    htmx.ajax('GET', window.BASE_PATH + '/api/nodes/' + id, {target: '#editor-pane', swap: 'innerHTML'});
+}
+
+function promptNew() {
+    if (!window.currentNodeId) { setMsg('Select a parent node first', 'danger'); return; }
+    const name = window.prompt('Enter a name for the new node', '');
+    if (name) {
+        htmx.ajax('POST', window.BASE_PATH + '/api/nodes', {
+            target: '#sidebar', swap: 'innerHTML',
+            values: {node_id: window.currentNodeId, name: name}
+        });
+    }
+}
+
+function deleteNode() {
+    if (!window.currentNodeId) return;
+    if (!window.confirm('Delete this node?')) return;
+    htmx.ajax('DELETE', window.BASE_PATH + '/api/nodes/' + window.currentNodeId, {target: '#sidebar', swap: 'innerHTML'})
+        .then(() => {
+            document.getElementById('editor-pane').innerHTML = '<p class="hint">Select a node from the tree to edit it.</p>';
+            setPublishVisible(false);
+        });
+}
+
+function duplicateNode() {
+    if (!window.currentNodeId) return;
+    if (!window.confirm('Duplicate this node?')) return;
+    htmx.ajax('POST', window.BASE_PATH + '/api/nodes/' + window.currentNodeId + '/copy', {target: '#sidebar', swap: 'innerHTML'});
+}
+
+function runSearch() {
+    const term = document.getElementById('srch-term').value;
+    document.getElementById('editor-pane').style.display = 'none';
+    document.getElementById('search-results').style.display = 'block';
+    htmx.ajax('GET', window.BASE_PATH + '/api/search?term=' + encodeURIComponent(term), {target: '#search-results', swap: 'innerHTML'});
+}
+
+function setPublishVisible(visible) {
+    document.getElementById('preview-btn').style.display = visible ? '' : 'none';
+    document.getElementById('publish-btn').style.display = visible ? '' : 'none';
+}
+
+function previewNode() {
+    if (!window.currentNodeId) return;
+    window.open(window.BASE_PATH + '/api/nodes/' + window.currentNodeId + '/preview', '_blank', 'noopener');
+}
+
+function publishNode() {
+    if (!window.currentNodeId) return;
+    htmx.ajax('POST', window.BASE_PATH + '/api/nodes/' + window.currentNodeId + '/publish', {swap: 'none'});
+}
+
+function setMsg(msg, type) {
+    const el = document.getElementById('msg');
+    el.textContent = msg;
+    el.className = 'msg-toast show ' + (type || 'success');
+    setTimeout(() => { el.className = 'msg-toast'; }, 2500);
+}
+
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    const path = evt.detail.pathInfo && evt.detail.pathInfo.requestPath || '';
+    if (!evt.detail.successful) {
+        setMsg('Request failed', 'danger');
+        return;
+    }
+    if (path.endsWith('/publish')) setMsg('Published');
+});
+
+document.getElementById('menu-toggle').addEventListener('click', function() {
+    document.getElementById('wrapper').classList.toggle('collapsed');
+});
+</script>
+{% endblock %}
